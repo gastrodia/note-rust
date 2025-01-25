@@ -1,0 +1,5 @@
+{
+  "name": "note-rust",
+  "scope": "deno-me",
+  "public": "./book"
+}

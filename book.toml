@@ -1,0 +1,6 @@
+[book]
+authors = ["Gastrodia"]
+language = "zh"
+multilingual = false
+src = "src"
+title = "Rust学习笔记"
