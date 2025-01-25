@@ -8,6 +8,9 @@ on:
 jobs:
   deploy:
     runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
