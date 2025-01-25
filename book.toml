@@ -5,6 +5,10 @@ multilingual = false
 src = "src"
 title = "Rust学习笔记"
 
+
+[output.html]
+additional-js = ["assets/custom.js"]
+
 [output.html.playground]
 editable = true
 copy-js = true
