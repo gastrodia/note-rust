@@ -1,5 +1,12 @@
 {
   "name": "note-rust",
   "scope": "deno-me",
-  "public": "./book"
+  "public": "./book",
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/index.html",
+      "permanent": true
+    }
+  ]
 }

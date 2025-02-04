@@ -1,6 +1,6 @@
 # Rust 学习笔记
 
-[前言](preface.md)
+[前言](index.md)
 
 # Rust 语言基础学习
 - [HelloWorld](hello-world.md)
