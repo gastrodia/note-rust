@@ -8,6 +8,7 @@ title = "Rust学习笔记"
 
 [output.html]
 additional-js = ["assets/custom.js"]
+git-repository-url = "https://github.com/gastrodia/note-rust"
 
 [output.html.playground]
 editable = true
@@ -15,4 +16,7 @@ copy-js = true
 
 [output.html.fold]
 enable = true
-level = 0
+level = 1
+
+[output.html.print]
+enable = false

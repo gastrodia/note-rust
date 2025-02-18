@@ -1,12 +1,6 @@
 window.addEventListener('load', onLoad);
 
 function onLoad() {
-    const chapterItems = document.querySelectorAll('li.chapter-item');
-    chapterItems.forEach((item) => {
-        item.classList.add('expanded');
-    });
-
-
     const script = document.createElement("script")
     script.type = "text/javascript";
     script.src = "https://giscus.app/client.js";
