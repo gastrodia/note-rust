@@ -26,7 +26,11 @@
     workspace = {
       onCreate = {
         # Open editors for the following files by default, if they exist:
-        default.openFiles = ["src/main.rs"];
+        # default.openFiles = ["src/main.rs"];
+      };
+
+      onStart = {
+        dev = "mdbook serve";
       };
     };
     # Enable previews and customize configuration
