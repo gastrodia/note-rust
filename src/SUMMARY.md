@@ -47,6 +47,7 @@
   - [动态大小类型](advance/sized.md)
   - [枚举和整数](advance/enum-int.md)
   - [Box<T>](advance/box.md)
+  - [Deref](advance/deref.md)
 
 
 
