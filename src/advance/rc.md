@@ -136,7 +136,7 @@ fn mian() {
 Rc只能在单线程中共享数据。\
 Arc可以在多线程中共享数据。
 ```rust
-fn arc_() {
+fn main() {
   // let s = Rc::new(String::from("hello"));
   //         ^^^^^ 没有实现Send trait
   let s = std::sync::Arc::new(String::from("hello"));
