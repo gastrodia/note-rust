@@ -1,4 +1,4 @@
-# Deref
+# `Deref`
 
 ## 为自定义类型实现`Deref`
 ```rust

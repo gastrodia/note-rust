@@ -1,4 +1,4 @@
-# &'static 和 T: 'static
+# `&'static` 和 `T: 'static`
 
 
 ## 通过裸指针窥探到内存中真实的值

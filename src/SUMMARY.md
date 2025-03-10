@@ -50,6 +50,7 @@
   - [Deref](advance/deref.md)
   - [Rc/Arc](advance/rc.md)
   - [Cell/RefCell](advance/cell.md)
+  - [Weak 与循环引用](advance/weak.md)
 
 
 
