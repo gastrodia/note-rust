@@ -144,3 +144,112 @@ fn main() {
   println!("a next item = {:?}", a.tail().unwrap().borrow().upgrade()); // 可看到 a指向b
 }
 ```
+```text
+a → Cons(1) → Weak(b)---弱连接---→ Cons(2) → Weak(a)
+   ▲                                         │
+   └----------------弱连接--------------------┘
+```
+
+## 验证`Weak`手动释放
+```rust
+use std::rc::{Rc, Weak};
+
+fn main() {
+  let a = Rc::new(String::from("hello"));
+  let b = Rc::downgrade(&a);
+
+  println!("[初始状态] a strong: {}", Rc::strong_count(&a));  // 1
+  println!("[初始状态] a weak: {}", Rc::weak_count(&a));      // 1
+  println!("[初始状态] b upgrade: {}", b.upgrade().is_some()); // true
+
+
+  match b.upgrade() {
+    Some(v) => println!("[初始状态] b weak: {v}"),
+    None => println!("[初始状态] no upgrade")
+  }
+
+  // 手动释放a
+  drop(a);
+
+  println!("[释放后状态] b upgrade: {}", b.upgrade().is_some()); // false
+  match b.upgrade() {
+    Some(v) => println!("[释放后状态] b weak: {v}"),
+    None => println!("[释放后状态] no upgrade")
+  }
+}
+```
+- 当我们读取`Weak`引用的值时，会得到`Option`，强制我们进行结果检查。
+- 如果值存在，则返回`Some<T>`
+- 如过访问被销毁的引用时，会得到`None`。
+
+## `Rc`与`Weak`对比
+
+| **特性**            | **Rc<T>** (强引用)                          | **Weak<T>** (弱引用)                          |
+|---------------------|--------------------------------------------|--------------------------------------------|
+| **所有权**           | 共享数据所有权                             | 无所有权，仅观察                          |
+| **强引用计数影响**   | 创建时 +1，克隆时 +1                      | **不改变强引用计数**                      |
+| **弱引用计数影响**   | 不改变弱引用计数                           | 创建时 +1，释放时 -1                      |
+| **内存释放条件**     | 当 strong_count = 0 时立即释放            | 不影响释放时机                            |
+| **升级能力**         | 可直接访问数据                             | 需调用 `upgrade()` 返回 `Option<Rc<T>>`    |
+| **循环引用风险**     | 直接使用会导致内存泄漏                     | **安全**，不会形成强引用闭环               |
+| **典型使用场景**     | 共享数据结构、多所有者模型                 | 观察者模式、缓存、树结构的父节点引用        |
+
+## `Rc`与`Weak`的使用场景
+
+| **场景**                    | **推荐选择** | **原因说明**                     |
+|----------------------------|-------------|----------------------------------|
+| 需要长期持有数据           | Rc          | 维持数据生命周期                 |
+| 需要避免循环引用           | Weak        | 打破强引用闭环                   |
+| 缓存系统                   | Weak        | 允许主数据释放后自动清理缓存      |
+| 树结构的父节点引用         | Weak        | 子节点不应阻止父节点释放          |
+| 多线程环境（需并发）        | Arc + Mutex | Rc/Weak 非线程安全               |
+
+## 树结构
+```rust
+use std::cell::RefCell;
+use std::rc::{Rc, Weak};
+use std::ops::Index;
+
+#[derive(Debug)]
+struct Node<T> {
+    value: T,
+    parent: RefCell<Weak<Node<T>>>,
+    children: RefCell<Vec<Rc<Node<T>>>>,
+}
+
+impl<T> Node<T> {
+  fn new(value: T) -> Rc<Self> {
+      Rc::new(Node {
+          value,
+          parent: RefCell::new(Weak::new()),
+          children: RefCell::new(Vec::new()),
+      })
+  }
+
+  fn add_child(parent: &Rc<Self>, child: Rc<Self>) {
+      *child.parent.borrow_mut() = Rc::downgrade(parent);
+      parent.children.borrow_mut().push(child);
+  }
+
+  fn get_parent(&self) -> Option<Rc<Node<T>>> {
+      self.parent.borrow().upgrade()
+  }
+}
+
+fn main() {
+  let root = Node::new("root");
+  println!("[root]: {:?}", root);
+  println!("[root parent]: {:?}", root.get_parent());
+
+  let child = Node::new("child");
+  Node::add_child(&root, child.clone());
+
+  println!("[root]: {:?}", root);
+  let binding = root.children.borrow();
+  let root_child = binding.index(0);
+  println!("[root children]: {:?}", root_child);
+  let root_child_parent = root_child.get_parent();
+  println!("[root children parent]: {:?}", root_child_parent);
+}
+
+```
