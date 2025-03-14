@@ -52,6 +52,7 @@
   - [Cell/RefCell](advance/cell.md)
   - [Weak 与循环引用](advance/weak.md)
   - [结构体中自引用](advance/self-ref.md)
+  - [并发和并行](advance/concurrency-parallelism.md)
 
 
 
