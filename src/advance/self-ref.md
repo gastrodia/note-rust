@@ -133,3 +133,59 @@ fn main() {
     println!("[c 更新后] {:?}, {}", c, c.ref_value());
 }
 ```
+
+## 使用`Pin<Box<T>>`
+
+```rust
+use std::marker::PhantomPinned;
+use std::pin::Pin;
+use std::ptr::NonNull;
+
+#[derive(Debug)]
+struct Wrapper {
+    value: String,
+    ref_value: NonNull<String>, // 使用NonNull确保其不会是空指针
+    _pin: PhantomPinned // 禁止移动的标记
+}
+
+impl Wrapper {
+    fn new(value: String) -> Pin<Box<Self>> {
+        let vo = Self {
+          value,
+          ref_value: NonNull::dangling(), // 创建临时无效指针
+          _pin: PhantomPinned //  标记为不可移动
+        };
+
+        let mut boxed = Box::pin(vo); // 将对象固定到堆内存
+        let ref_value = NonNull::from(&boxed.value); // 获取value的有效指针
+
+        unsafe {
+            let mut_boxed = Pin::as_mut(&mut boxed); // 获取可变Pin引用
+            Pin::get_unchecked_mut(mut_boxed).ref_value = ref_value; // 写入有效指针
+        }
+        boxed
+    }
+
+    fn ref_value_push(self: Pin<&mut Self>, s: &str) {
+        unsafe {
+            // 通过 Pin 获取内部可变引用
+            let mut_ref = self.get_unchecked_mut(); // 得到可变引用的Wrapper
+            let mut ref_value = mut_ref.ref_value.as_ptr(); // 得到可变指针
+            let origin_mut = &mut *ref_value; // 得到实际String可变引用
+            origin_mut.push_str(s);
+        }
+    }
+}
+
+fn main() {
+    let x = String::from("hello");
+    let y = Wrapper::new(x);
+    println!("[y 创建后] {:?}, {:?}", y, y.ref_value);
+
+    // 移交y的所有权
+    let mut z = y;
+    // 直接通过指针改原始值
+    z.as_mut().ref_value_push(" world");
+    println!("[z 接受后] {:?}, {:?}, {}", z, z.ref_value, z.value); // z.ref_value保存的指针未变动
+}
+```
