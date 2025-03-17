@@ -80,7 +80,7 @@ fn main() {
 use std::rc::Rc;
 
 #[allow(unused)]
-fn mian() {
+fn main() {
   fn return_borrow() {
     let s = String::from("hello");
     // &s
@@ -105,7 +105,7 @@ fn mian() {
 use std::rc::Rc;
 
 #[allow(unused)]
-fn mian() {
+fn main() {
   fn drop_borrow() {
     struct Wrapper<'a>(&'a String);
 

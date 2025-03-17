@@ -200,9 +200,7 @@ fn main() {
 ```
 ## 闭包的返回值
 ```rust
-fn closure_returns() {
-    println!("=== closure_returns ===");
-
+fn main() {
     fn foo() -> Box<dyn Fn(u8) -> u8> {
         let num = 10;
         Box::new(move |x| x + num)
