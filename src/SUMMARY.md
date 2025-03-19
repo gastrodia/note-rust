@@ -54,6 +54,7 @@
   - [结构体中自引用](advance/self-ref.md)
   - [并发和并行](advance/concurrency-parallelism.md)
   - [使用多线程](advance/thread.md)
+  - [线程通信](advance/thread-message.md)
 
 
 
