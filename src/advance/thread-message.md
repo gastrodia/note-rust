@@ -144,6 +144,8 @@ use std::time::Duration;
 
 fn main() {
   let (sender, receiver) = mpsc::sync_channel(0);
+  //                                          ^ 这里的0表示 通道中的消息缓存条数
+  // 假设缓存条数设置未N, 则表示先发送N条无阻塞（异步）的消息后再进入阻塞（同步）状态
 
   thread::spawn(move || {
     println!("发送前");
