@@ -7,7 +7,7 @@ title = "Rust学习笔记"
 
 
 [output.html]
-additional-js = ["assets/custom.js"]
+additional-js = ["assets/bigPicture.js", "assets/custom.js"]
 git-repository-url = "https://github.com/gastrodia/note-rust"
 
 [output.html.playground]
