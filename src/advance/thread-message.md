@@ -182,3 +182,40 @@ Hello, world!
         <img src="./images/thread-message/2.svg"  alt="同步通道" />
     </div> 
 </div> 
+
+
+## 向通道中发送多类型的数据
+```rust
+use std::sync::mpsc;
+
+fn main() {
+    let (sender, receiver) = mpsc::channel();
+    // 单个通道中只能发送单一类型的数据
+    // 通过 枚举 作为载体可以向通道发生多类型的数据
+    enum Fruit {
+        Apple(u8),
+        Orange(String),
+        Lemon(bool)
+    }
+
+    sender.send(Fruit::Apple(1)).unwrap();
+    sender.send(Fruit::Orange(String::from("great"))).unwrap();
+    sender.send(Fruit::Lemon(false)).unwrap();
+    sender.send(Fruit::Lemon(true)).unwrap();
+
+    for re in receiver {
+        match re {
+            Fruit::Apple(number) => {
+                println!("Apple has {}", number);
+            },
+            Fruit::Orange(estimation) => {
+                println!("Orange is {}", estimation);
+            }
+            Fruit::Lemon(isSour) => {
+                println!("Lemon are {}sour", if isSour {""} else {"not "});
+            }
+        }
+    }
+}
+```
+
