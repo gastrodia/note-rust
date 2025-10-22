@@ -210,7 +210,7 @@ fn main() {
             },
             Fruit::Orange(estimation) => {
                 println!("Orange is {}", estimation);
-            }
+            },
             Fruit::Lemon(isSour) => {
                 println!("Lemon are {}sour", if isSour {""} else {"not "});
             }
