@@ -206,3 +206,64 @@ fn main() {
   println!("end")
 }
 ```
+
+### 使用条件变量`Condvar`控制线程的同步（执行顺序）
+```rust
+use std::sync::{Arc, Mutex, Condvar};
+use std::thread;
+use std::thread::sleep;
+use std::time::Duration;
+
+fn main() {
+    let park = Arc::new((Mutex::new(false), Condvar::new()));
+    let park_clone = Arc::clone(&park);
+    
+    // 创建子线程
+    let handle = thread::spawn(move || {
+        println!("child thread start");
+        let (park_lock, park_cond) = &*park_clone;
+        let mut lock = park_lock.lock().unwrap();
+        let mut counter = 0;
+        
+        // 子线程循环3次
+        while counter < 3 {
+            println!("a");
+            while !*lock { // 当锁为false时进入循环
+         // ^^^^^^^^^^^^ 这里为什么要用while循环？
+         // 是为了防止虚假唤醒
+         // 说白了就是，线程会被wait()唤醒，
+         // wait()方法会重新获取锁时但并不意味着 *lock 的值已经变为true了
+         // 所以需要用while循环来确保 *lock的值为true时才继续向下执行
+
+                println!("b");
+                // 被唤醒后会自动重新获取锁
+                lock = park_cond.wait(lock).unwrap(); // 等待notify_one
+                //               ^^^^ wait方法 会先释放锁，这样其他线程就可以获取锁了
+                // 然后再阻塞当前线程，直到被notify_one()或notify_all()唤醒
+                // 当其他线程调用notify_one()或notify_all()时，当前线程会重新获取锁，并继续执行循环
+            }
+            println!("c");
+            // 条件满足后，重置条件为false，准备下次等待
+            *lock = false;
+            println!("child thread #{}", counter);
+            counter += 1;
+        }
+    });
+
+    let mut counter = 0;
+    let (lock, cond) = &*park;
+    
+    while counter < 3 {
+        sleep(Duration::from_millis(1000)); // 等待1秒
+        *lock.lock().unwrap() = true; // 设置条件为true，表示条件满足
+        cond.notify_one(); // 通知等待的线程（子线程）条件已满足
+        println!("main thread loop {}", counter);
+        counter += 1;
+    }
+
+    // 等待子线程完成
+    handle.join().unwrap();
+    println!("end")
+}
+
+```

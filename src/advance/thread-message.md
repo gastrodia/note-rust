@@ -203,7 +203,9 @@ fn main() {
     sender.send(Fruit::Lemon(false)).unwrap();
     sender.send(Fruit::Lemon(true)).unwrap();
 
-    for re in receiver {
+    drop(sender); // 需要手动销毁掉sender 
+
+    for re in receiver { // 这里会无限制等待消息，直到通道关闭 因此上面需要手动销毁sender 否则会造成死锁
         match re {
             Fruit::Apple(number) => {
                 println!("Apple has {}", number);
