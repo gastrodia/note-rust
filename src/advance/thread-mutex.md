@@ -207,7 +207,7 @@ fn main() {
 }
 ```
 
-### 使用条件变量`Condvar`控制线程的同步（执行顺序）
+## 使用条件变量`Condvar`控制线程的同步（执行顺序）
 ```rust
 use std::sync::{Arc, Mutex, Condvar};
 use std::thread;
@@ -266,4 +266,40 @@ fn main() {
     println!("end")
 }
 
+```
+
+## 信号量（限制并发任务的数量）
+推荐使用`tokio`
+```toml
+[dependencies]
+tokio = { version = "1.48.0", features = ["full"] }
+```
+
+```rust
+use std::sync::{Arc};
+use std::time::Duration;
+use tokio::sync::Semaphore;
+
+#[tokio::main]
+async fn main() {
+    let semaphore = Arc::new(Semaphore::new(3)); // 创建一个最多同时允许三个线程的限制
+    let mut handles = vec![];
+
+    for i in 0..10 {
+       let semaphore_clone = Arc::clone(&semaphore);
+        handles.push(tokio::spawn(async move {
+            let permit = semaphore_clone.acquire_owned().await.unwrap();
+            tokio::time::sleep(Duration::from_millis(1000)).await;
+            println!("spawn thread, {}", i);
+            drop(permit); // 释放信号量许可
+            // 其实这里可以不需要显式的drop, 因为permit会在作用域结束时自动释放
+            // 但是为了代码的清晰性，增强语义，显式的drop还是更好一些
+        }));
+    }
+
+
+    for handle in handles {
+        handle.await.unwrap();
+    }
+}
 ```
