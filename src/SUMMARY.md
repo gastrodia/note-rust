@@ -56,6 +56,7 @@
   - [使用多线程](advance/thread.md)
   - [线程通信](advance/thread-message.md)
   - [线程同步：锁、Condvar 和信号量](advance/thread-mutex.md)
+  - [Atomic](advance/atomic.md)
 
 
 
