@@ -79,6 +79,8 @@ fn main() {
 - `Rc<T>`和`RefCell<T>`用于单线程内部可变性;
 - `Arc<T>`和`Mutex<T>`用于多线程间的内部可变性。
 
+![互斥锁](./images/thread-mutex/1.png)
+
 ## 多线程死锁
 
 ```rust

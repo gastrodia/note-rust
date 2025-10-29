@@ -1,11 +1,10 @@
-# Atomic
+# `Atomic`
 
 ## 原子操作
 
 ```rust
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
-use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 const LOOP_TIMES: u64 = 100000;
@@ -25,7 +24,7 @@ fn main() {
         for _ in 0..LOOP_TIMES {
           // 原子地增加SAFE_COUNTER的值，并返回旧值
           SAFE_COUNTER.fetch_add(1, Ordering::Relaxed);
-          // Ordering::Relaxed: 最宽松的顺序，允许编译器和CPU进行优化
+          // Ordering::Relaxed: 最宽松的顺序，允许编译器和CPU进行优化(无限制)
           // Ordering::Acquire: 获取顺序，确保在获取操作之前的所有读操作都已完成
           // Ordering::Release: 释放顺序，确保在释放操作之后的所有写操作都已完成
           // Ordering::AcqRel: 获取释放顺序，读操作使用Acquire，写操作使用Release
@@ -80,3 +79,37 @@ fn main() {
   println!("mutex: {} , {}", *counter.lock().unwrap(), LOOP_TIMES * THREADS as u64);
 }
 ```
+
+## 使用`Atomic`模拟自旋锁
+
+```rust
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::{hint, thread};
+use std::thread::sleep;
+use std::time::{Duration};
+use std::sync::{Arc};
+
+fn main() {
+  let lock = Arc::new(AtomicBool::new(true));
+  
+  let lock_ = Arc::clone(&lock);
+  let handle = thread::spawn(move || {
+    sleep(Duration::from_millis(1000));
+    lock_.store(false, Ordering::SeqCst);
+    println!("lock released");
+  });
+
+  println!("lock before");
+  // 自旋锁：不断检查counter的值，直到它变为false
+  // 这是一种忙等待，会持续占用CPU
+  while lock.load(Ordering::SeqCst) {
+    // hint::spin_loop() 告诉CPU这是一个自旋循环，可以进行优化（如降低功耗）
+    hint::spin_loop();
+  }
+  println!("lock after");
+  
+  handle.join().unwrap();
+}
+```
+自旋锁的示意图:
+![自旋锁](./images/atomic/1.png)
