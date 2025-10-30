@@ -53,5 +53,58 @@ fn main() {
 
 ## 裸指针也不能在线程间传递共享
 ```rust
+use std::thread;
 
+fn main() {
+  let mut num = 5u8;  
+  let mum_p = &mut num as *mut u8;
+  println!("mum_p: {:p}", mum_p);
+  unsafe {
+    println!("mut: {}", *mum_p);
+  }
+
+  // 将裸指针移入子线程
+  thread::spawn(move || {
+    //          ^^^^ `*mut u8` cannot be sent between threads safely
+    unsafe {
+      println!("mut: {}", *mum_p);
+    }
+  }).join().unwrap();
+}
+```
+
+### 使用`Newtype` 模式实现将裸指针传入子线程
+```rust
+
+use std::thread;
+
+fn main() {
+  let num = 5u8;
+  let num_p = &num as *const u8;
+  println!("num p = {:p}", num_p);
+  unsafe {
+    println!("num {}", *num_p);
+  }
+
+  // 使用newtype
+  #[derive(Debug)]
+  struct Wrapper(*const u8);
+
+  impl Wrapper {
+    fn value(&self) -> *const u8 {
+      self.0
+    }
+  }
+
+  // 为 Wrapper 实现 Send 与 Sync trait
+  unsafe impl Sync for Wrapper {}
+  unsafe impl Send for Wrapper {}
+  // 如果注释上面两行代码将会报错
+
+  let wrapper = Wrapper(num_p);
+  thread::spawn(move || {
+    let result = wrapper.value();
+    unsafe { println!("in thread: {:p} = {}", result, *result); }
+  }).join().unwrap();
+}
 ```
