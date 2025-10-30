@@ -1,6 +1,9 @@
+[rust]
+edition = "2021"
+
 [book]
 authors = ["Gastrodia"]
-language = "zh"
+language = "zh-CN"
 multilingual = false
 src = "src"
 title = "Rust学习笔记"

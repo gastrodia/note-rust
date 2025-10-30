@@ -58,6 +58,7 @@
   - [线程同步：锁、Condvar 和信号量](advance/thread-mutex.md)
   - [Atomic](advance/atomic.md)
   - [Send Sync](advance/send-sync.md)
+  - [const static](advance/const-static.md)
 
 
 
