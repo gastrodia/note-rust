@@ -30,7 +30,7 @@
       };
 
       onStart = {
-        dev = "mdbook serve";
+        mdbook-serve = "mdbook serve";
       };
     };
     # Enable previews and customize configuration

@@ -206,6 +206,77 @@ fn main() {
 }
 ```
 
+## `Once`与`Lazy`
+
+| 类型       | 线程安全 | 初始化方式            | 使用场景                          | 性能说明                |
+|-----------|---------|---------------------|---------------------------------|-----------------------|
+| `OnceCell`  | 单线程   | 手动调用 `get_or_init()` | 单线程，需要控制初始化时机           | 最快（无锁）           |
+| `OnceLock`  | 多线程   | 手动调用 `get_or_init() `| 多线程，需要控制初始化时机           | 较快（有锁）           |
+| `LazyCell`  | 单线程   | 自动（首次访问时）       | 单线程，自动懒加载（已废弃）          | 最快（无锁，但已废弃）  |
+| `LazyLock` ✅  | 多线程   | 自动（首次访问时）       | 多线程，自动懒加载（推荐）            | 较快（有锁）           |
+
+
+### 使用`OnceLock`来替代`lazy_static`
+```rust
+use std::sync::OnceLock;
+use std::collections::HashMap;
+
+type ConfigMap = HashMap<&'static str, u8>;
+static CONFIG: OnceLock<ConfigMap> = OnceLock::new();
+
+struct Config;
+impl Config {
+    fn get() -> &'static ConfigMap {
+        CONFIG.get_or_init(|| { // 获取或初始化
+            println!("Config 开始初始化"); // 只会在第一次初始化时打印
+            let mut config = ConfigMap::new();
+            config.insert("Apple", 1);
+            config.insert("Orange", 2);
+            config.insert("Banana", 3);
+            config
+        })
+    }
+
+    fn print(key: &str) {
+        match Config::get().get(key) {
+            Some(value) => println!("CONFIG[{key}]: {:?}", value),
+            None => println!("CONFIG[{key}]: key not found"),
+        }
+    }
+}
+
+fn main() {
+    println!("Config 还未初始化");
+    println!("CONFIG: {:?}", Config::get()); // 此时才开始初始化
+    Config::print("Apple"); // 直接获取值
+}
+```
+### 使用`LazyLock`可以更简单
+```rust
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
+type ConfigMap = HashMap<&'static str, u8>;
+
+static CONFIG: LazyLock<ConfigMap> = LazyLock::new(|| {
+    let mut config = ConfigMap::new();
+    println!("Config 开始初始化");
+    config.insert("Apple", 1);
+    config.insert("Orange", 2);
+    config.insert("Banana", 3);
+    config
+});
+
+fn main() {
+    let config = &CONFIG;
+    println!("{:?}", config); // 还未初始化
+    println!("Apple: {:?}", config.get("Apple").unwrap()); // 开始初始化 然后获取值
+    println!("{:?}", config); 
+}
+```
+
+
+
 ## `Box::laek`
 `Box::laek` 通过泄漏内存，可将一个值转换为`'static`生命周期；
 转换后该值将不会被回收，直至程序本身结束。
@@ -241,3 +312,7 @@ fn main() {
   }
 }
 ```
+
+使用了 `Box::new(demo)` 将局部变量 `demo` 分配到堆上，返回一个指向堆内存的智能指针 `Box<Demo>`。
+然后调用 `Box::leak` 将智能指针转换为具有 `'static` 生命周期的裸指针（即普通引用），并将其赋值给全局静态变量 `WRAPPER`。
+关键点：通过这种方式，堆上的数据不会在当前作用域结束时被释放，而是拥有 `'static` 生命周期。
