@@ -5,13 +5,13 @@
 - [`result`的逻辑运算](#result的逻辑运算)
 - [`or_else`](#or_else)
 - [`and_then`](#and_then)
-- [`option`的`filter`](#option的filter)
-- [`result`和`option`的`map`](#result和option的map)
-- [`result`的`map_err`](#result的map_err)
-- [`result`和`option`的`map_or`](#result和option的map_or)
-- [`result`和`option`的`map_or_else`](#result和option的map_or_else)
-- [`option`的`ok_or`](#option的ok_or)
-- [`option`的`ok_or_else`](#option的ok_or_else)
+- [`filter`](#option的filter)
+- [`map`](#result和option的map)
+- [`map_err`](#result的map_err)
+- [`map_or`](#result和option的map_or)
+- [map_or_else`](#result和option的map_or_else)
+- [`ok_or`](#option的ok_or)
+- [`ok_or_else`](#option的ok_or_else)
 
 ### `Option`的逻辑运算
 ```rust
