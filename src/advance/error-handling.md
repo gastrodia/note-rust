@@ -292,3 +292,268 @@ fn main() {
     assert_eq!(n1.ok_or_else(fn_none_msg), Err(none_msg)); // None -> 应用闭包 -> Error<闭包的返回值>
 }
 ```
+
+
+## 自定义错误类型
+
+自定义错误类型需要实现`Debug`和`Display`.
+
+### 通过派生宏自动实现`Debug`
+```rust
+use std::fmt::{Debug, Display, Formatter};
+
+fn main() {
+    #[derive(Debug)] // 通过派生宏自动实现Debug
+    struct FetchError {
+        code: usize,
+        message: String,
+    }
+
+    impl Display for FetchError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            //                                  ^^^^^^^^^^^^^^^^ 注意这里不是 std::result::Result
+            write!(f, "Display: FetchError error!, code {}, message {}", self.code, self.message)
+        }
+    }
+
+    let result: Result<(), FetchError> = Err(FetchError {
+        code: 404,
+        message: "Not Found".to_string(),
+    });
+
+    println!("{:#?}", result);
+
+    if let Err(err_msg) = result {
+        println!("{}", err_msg);
+    }
+}
+```
+### 手动实现`Debug`
+
+```rust
+use std::fmt::{Debug, Display, Formatter};
+
+fn main() {
+    struct FetchError {
+        code: usize,
+        message: String,
+    }
+
+    impl Display for FetchError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            let msg = match self.code {
+                404 => "Not Found",
+                _ => "Error"
+            };
+            write!(f, "Display: FetchError error!, code {}, message {}", self.code, msg)
+        }
+    }
+
+    // 手动实现Debug
+    impl Debug for FetchError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Debug: FetchError {{ code: {}, message: {} }}", self.code, self.message)
+        }
+    }
+
+    let result: Result<(), FetchError> = Err(FetchError {
+        code: 404,
+        message: "page not found".to_string(),
+    });
+
+    println!("{:#?}", result);
+
+    if let Err(err_msg) = result {
+        println!("{}", err_msg);
+    }
+
+}
+```
+
+## 将其他错误类型转为自定义错误类型
+
+```rust
+fn main() {
+    #[derive(Debug)]
+    struct AppError {
+        from: &'static str,
+        message: String,
+    }
+    
+    // 实现From trait 将io::Error转换为AppError
+    impl std::convert::From<std::io::Error> for AppError {
+        fn from(value: std::io::Error) -> Self {
+            AppError {
+                from: "io",
+                message: value.to_string(),
+            }
+        }
+    }
+
+    // 实现From trait 将env::VarError转换为AppError
+    impl std::convert::From<std::env::VarError> for AppError {
+        fn from(value: std::env::VarError) -> Self {
+            AppError {
+                from: "env",
+                message: value.to_string(),
+            }
+        }
+    }
+
+    fn look_file() -> Result<(), AppError> {
+        let file = std::fs::File::open("test.txt")?;
+        println!("file {:?}", file);
+        Ok(())
+    }
+
+    fn look_env() -> Result<(), AppError> {
+        let env = std::env::var("TEST")?;
+        println!("env {:?}", env);
+        Ok(())
+    }
+
+    fn match_app(result: &Result<(), AppError>) {
+        match result {
+            Ok(()) => println!("success"),
+            Err(err) => {
+                match err {
+                    AppError { from: "io", message } => println!("io error: {}", message),
+                    AppError { from: "env", message } => println!("env error: {}", message),
+                    other => println!("unknown error: {:?}", other),
+                }
+            },
+        }
+    }
+
+    match_app(&look_file());
+    match_app(&look_env());
+}
+```
+
+## 错误归一化
+当某个函数内部可能发生多种不同类型的错误时，**将这些不同类型的错误统一转换为一个统一的错误类型**，使函数只返回一个错误类型。
+```rust
+fn main() {
+    fn happen_error() -> Result<(), std::error::Error> {
+        //                          ^^^^^^^^^^^^^^^^^  std::error::Error 是一个 trait，不是具体类型
+        std::fs::File::open("test.txt")?; // io::Error
+        std::env::var("TEST")?; // env::VarError
+        Ok(())
+    }
+
+    let result = happen_error();
+    println!("happen_error {:?}", result);
+}
+```
+
+### 使用`Box<dyn std::error::Error>`
+```rust
+fn main() {
+    fn happen_error() -> Result<(), Box<dyn std::error::Error>> {
+        std::fs::File::open("test.txt")?; // io::Error
+        std::env::var("TEST")?; // env::VarError
+        Ok(())
+    }
+
+    let result = happen_error();
+    println!("happen_error {:?}", result);
+}
+```
+
+### 使用自定义错误类型
+正如[将其他错误类型转为自定义错误类型](#将其他错误类型转为自定义错误类型)
+通过为自定义错误类型实现`From` trait，将其他错误类型转换为自定义错误类型
+当使用 `?` 操作符时，Rust 会：
+1. 检查是否有错误
+2. 如果有错误，自动调用 `From trait` 将错误类型转换为函数返回的错误类型
+3. 提前返回转换后的错误
+```rust
+use std::fmt::{Debug, Display, Formatter};
+
+fn main() {
+    #[derive(Debug)]
+    enum AppError {
+        IOError(std::io::Error),
+        VarError(std::env::VarError)
+    }
+
+    // 实现From trait 将io::Error转换为AppError
+    impl std::convert::From<std::io::Error> for AppError {
+        fn from(value: std::io::Error) -> Self {
+            AppError::IOError(value)
+        }
+    }
+
+    // 实现From trait 将env::VarError转换为AppError
+    impl std::convert::From<std::env::VarError> for AppError {
+        fn from(value: std::env::VarError) -> Self {
+            AppError::VarError(value)
+        }
+    }
+
+    fn happen_error() -> Result<(), AppError> {
+        std::fs::File::open("test.txt")?; // 自动调用form将io::Error转为AppError::IOError
+        std::env::var("TEST")?; // 自动调用form将env::VarError转为AppError::VarError
+        Ok(())
+    }
+
+    if let Err(payload) = happen_error() {
+        match payload {
+            AppError::IOError(err) => println!("io error: {}", err),
+            AppError::VarError(err) => println!("var error: {}", err)
+        }
+    }
+}
+```
+
+### 使用`thiserror`
+```toml
+[dependencies]
+thiserror = "2.0.11"
+```
+
+```rust
+use thiserror;
+fn main() {
+    #[derive(Debug, thiserror::Error)]
+    enum AppError {
+        #[error(transparent)]
+        IOError(#[from] std::io::Error),
+        #[error("var not found: {0}")]
+        VarError(#[from] std::env::VarError)
+    }
+
+    fn happen_error() -> Result<(), AppError> {
+        std::env::var("TEST")?; // env::VarError
+        std::fs::File::open("test.txt")?; // io::Error
+        Ok(())
+    }
+    if let Err(payload) = happen_error() {
+        match payload {
+            AppError::IOError(err) => println!("> io error: {}", err),
+            AppError::VarError(err) => println!("> var error: {}", err)
+        }
+    }
+}
+```
+
+### 使用`anyhow`
+```toml
+[dependencies]
+anyhow="1.0.95"
+```
+
+```rust
+use anyhow;
+
+fn main() {
+    fn happen_error() -> anyhow::Result<()> {
+        std::fs::File::open("test.txt")?; // io::Error
+        std::env::var("TEST")?; // env::VarError
+        Ok(())
+    }
+    if let Err(payload) = happen_error() {
+        println!("anyhow: {:?}", payload);
+    }
+}
+```
