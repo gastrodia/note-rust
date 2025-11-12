@@ -135,8 +135,7 @@ fn main() {
 若使用可变借用，则会对`vector`同时进行两次可变借用，这在rust中是不被允许的，但是从现实的角度来说，切片的两部分互相不受影响，因此是安全，所以我们可以使用指针与`unsafe`来规避借用检查器。
 
 ```rust
-
-fn impl_slice_vec_mut() {
+fn main() {
     fn split_at_mut<T>(vector: &mut [T], mid: usize) -> (&mut [T], &mut [T]) {
         let len = vector.len();
         let ptr = vector.as_mut_ptr();
@@ -160,8 +159,14 @@ fn impl_slice_vec_mut() {
     println!("> vector => {:?}", vector); // 原始数据被修改了
 }
 ```
-`from_raw_parts_mut`: 从裸指针和长度创建可变切片
+为什么`split_at_mut`是安全的不需要使用`unsafe fn`定义？
+- `ptr` 来自有效的切片 `vector，指向已分配且初始化的内存`
+- `mid` 已通过 `assert` 检查，确保 `mid <= len`
+- 两个切片互不重叠：`[0, mid)` 和 `[mid, len)`
+- 通过借用检查器保证了在返回的两个切片生命周期内，原始 `vector` 不会被访问。
 
+
+为什么`from_raw_parts_mut`（从裸指针和长度创建可变切片）需要放在`unsafe {}`中调用？
 安全要求（调用者必须保证）：
 1. `ptr` 必须指向有效的、已初始化的内存
 2. `ptr` 必须正确对齐
@@ -169,8 +174,4 @@ fn impl_slice_vec_mut() {
 4. 在生成的切片生命周期内，不能有其他指针访问这块内存（独占访问）
 5. 总大小 `len * size_of::<T>()` 不能超过 `isize::MAX`
 
-为什么这里是安全的：
-- `ptr` 来自有效的切片 `vector，指向已分配且初始化的内存`
-- `mid` 已通过 `assert` 检查，确保 `mid <= len`
-- 两个切片互不重叠：`[0, mid)` 和 `[mid, len)`
-- 通过借用检查器保证了在返回的两个切片生命周期内，原始 `vector` 不会被访问。
+
