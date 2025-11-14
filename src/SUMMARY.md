@@ -62,5 +62,6 @@
   - [错误处理](advance/error-handling.md)
   - [unsafe](advance/unsafe.md)
   - [macro](advance/macro.md)
+  - [async](advance/async.md)
 
 
